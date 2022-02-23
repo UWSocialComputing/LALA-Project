@@ -12,9 +12,11 @@ TOKEN = os.getenv('DISCORD_TOKEN')
 
 client = discord.Client()
 
+
 @client.event
 async def on_ready():
     print(f'{client.user} has connected to Discord!')
+    print(discord.__version__)
 
 # Triggers every time a message is received
 @client.event
@@ -46,4 +48,8 @@ async def print_study_session_request_response(message, study_session):
     await message.channel.send(f'{message.author} has requested a study session!')
     await message.channel.send(f'on {study_session.date} at {study_session.time} for {study_session.duration} hour')
 
+@client.event
+async def on_member_join(member):
+    await member.send("Welcome! TEST")
+    
 client.run(TOKEN)
