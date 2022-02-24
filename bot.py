@@ -1,5 +1,6 @@
 # bot.py
 import os
+from discord.ext import commands
 import discord
 from dotenv import load_dotenv
 from discord.ext import commands
@@ -7,16 +8,21 @@ from StudySession import StudySession
 import datetime
 
 load_dotenv()
-TOKEN = os.getenv('DISCORD_TOKEN')
-
-client = commands.Bot(command_prefix='/')
 
 study_session_users = []
+
+intents = discord.Intents.default()
+intents.members = True
+client = commands.Bot(command_prefix='/', intents=intents)
+
+TOKEN = os.getenv('DISCORD_TOKEN')
+
 
 @client.event
 async def on_ready():
     print(f'{client.user} has connected to Discord!')
     print(discord.__version__)
+
 @client.command(name='schedule')
 async def schedule_session(ctx, *args):
     study_session = parse_study_session_request(*args)
@@ -61,9 +67,16 @@ async def print_study_session_request_response(message, study_session):
     await message.channel.send(embed=embed)
    
 
+# sends DM with instructions to users who join server
 @client.event
 async def on_member_join(member):
-    await member.send("Welcome! TEST")
+    await member.send('Welcome to the StudyCafe!\n\n' + 
+    'To Schedule a Group Study Session use the /schedule command followed by the date [year-monthy-date] the time in PST followed by am/pm and the duration [1,2,3 hr]\n' +
+    'Example: /schedule 2022-02-23 5pm 1\n\n' +
+    'Once your session is scheduled other members of this server can “RSVP” to the session by using the reactions ✅ or ❌\n' +
+    'When the study session begins users who reacted ✅  will enter a channel to moderate the session for the elapsed time.\n' +
+    'Prompts will help guide your session and promote efficient and effective study time.\n\n' +
+    'Happy studying!')
 
 @client.event
 async def on_reaction_add(reaction, user):
@@ -75,5 +88,6 @@ async def on_reaction_add(reaction, user):
             if reaction.emoji == '✅':
                 study_session_users.append(user)
                 print(user)
+
     
 client.run(TOKEN)
