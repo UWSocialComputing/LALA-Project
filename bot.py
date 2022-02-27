@@ -74,16 +74,17 @@ async def print_study_session_request_response(message, study_session):
     await embedded_msg.add_reaction('❌')
    
 
+
+
 # sends DM with instructions to users who join server
 @client.event
 async def on_member_join(member):
-    await member.send('Welcome to the StudyCafe!\n\n' + 
-    'To Schedule a Group Study Session use the /schedule command followed by the date [year-monthy-date] the time in PST followed by am/pm and the duration [1,2,3 hr]\n' +
-    'Example: /schedule 2022-02-23 5pm 1\n\n' +
-    'Once your session is scheduled other members of this server can “RSVP” to the session by using the reactions ✅ or ❌\n' +
-    'When the study session begins users who reacted ✅  will enter a channel to moderate the session for the elapsed time.\n' +
-    'Prompts will help guide your session and promote efficient and effective study time.\n\n' +
-    'Happy studying!')
+    await member.send('👋 Welcome to the StudyCafe!\n') 
+    await member.send('📅 To schedule a group session use the /schedule command followed by the date [year-month-date] the time in PT followed by am/pm and the duration [1,2,3 hr]\n' +
+    '🆕 Example: /schedule 2022-02-23 5pm 1')
+    await member.send('🔜 Once your session is scheduled other members of this server can “RSVP” to the session by using the reactions ✅ or ❌\n')
+    await member.send('ℹ️ Use /help to see additional commands :)\n')
+    await member.send('👨‍💻 Happy studying!')
 
 @client.event
 async def on_reaction_add(reaction, user):
@@ -100,6 +101,7 @@ async def on_reaction_add(reaction, user):
                 study_sessions[int(session_id)].users.append(user)
             if reaction.emoji not in ['✅','❌']:
                 await reaction.clear()
+    
 
     
 client.run(TOKEN)
