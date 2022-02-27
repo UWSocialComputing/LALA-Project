@@ -9,7 +9,8 @@ import datetime
 
 load_dotenv()
 
-study_session_users = []
+# study_session_users = []
+study_sessions = []
 
 intents = discord.Intents.default()
 intents.members = True
@@ -26,13 +27,15 @@ async def on_ready():
 @client.command(name='schedule')
 async def schedule_session(ctx, *args):
     study_session = parse_study_session_request(*args)
+    study_sessions.append(study_session)
     await print_study_session_request_response(ctx, study_session)
 
 @client.command(name='startsession')
 async def start_session(ctx, arg):
-    channel = await ctx.guild.create_text_channel(arg)
+    # arg = session id, NOT name
+    channel = await ctx.guild.create_text_channel(f'session-{arg}')
     user_string = ''
-    for user in study_session_users:
+    for user in study_sessions[int(arg)].users:
         user_string += f'<@{user.id}> '
     await channel.send(user_string + 'your study session is starting now!')
   
@@ -63,8 +66,12 @@ async def print_study_session_request_response(message, study_session):
     embed=discord.Embed(title=f'{message.author} has requested a study session on {study_session.date} at {study_session.time} for {study_session.duration} hour',
                          description='Please use the emojis to accept or reject this study session!',
                         color=0xFF5733)
-    embed.set_footer(text="schedule poll")
-    await message.channel.send(embed=embed)
+    embed.set_footer(text=f'session id: {study_session.id}')
+    
+    
+    embedded_msg = await message.channel.send(embed=embed)
+    await embedded_msg.add_reaction('✅')
+    await embedded_msg.add_reaction('❌')
    
 
 # sends DM with instructions to users who join server
@@ -81,13 +88,18 @@ async def on_member_join(member):
 @client.event
 async def on_reaction_add(reaction, user):
     msg = reaction.message
+    if user == client.user:
+        return
+
     if len(msg.embeds)>0:
         emb = msg.embeds[0]
         ft = emb.footer
-        if ft.text.startswith('schedule poll'):
+        if ft.text.startswith('session id'):
+            session_id = ft.text[12:]
             if reaction.emoji == '✅':
-                study_session_users.append(user)
-                print(user)
+                study_sessions[int(session_id)].users.append(user)
+            if reaction.emoji not in ['✅','❌']:
+                await reaction.clear()
 
     
 client.run(TOKEN)
