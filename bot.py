@@ -39,6 +39,10 @@ async def start_session(ctx, arg):
     for user in study_sessions[int(arg)].users:
         user_string += f'<@{user.id}> '
     await channel.send(user_string + 'your study session is starting now!')
+  
+@client.command(name='endsession')
+async def end_session(ctx):
+    await ctx.channel.delete()
 
 
     user_info = {}
@@ -116,6 +120,7 @@ async def on_reaction_add(reaction, user):
                 study_sessions[int(session_id)].users.append(user)
             if reaction.emoji not in ['✅','❌']:
                 await reaction.clear()
+    
 
     
 client.run(TOKEN)
