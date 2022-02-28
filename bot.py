@@ -77,8 +77,6 @@ async def print_study_session_request_response(message, study_session):
     await embedded_msg.add_reaction('❌')
    
 
-
-
 # sends DM with instructions to users who join server
 @client.event
 async def on_member_join(member):
