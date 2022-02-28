@@ -39,6 +39,9 @@ async def start_session(ctx, arg):
         user_string += f'<@{user.id}> '
     await channel.send(user_string + 'your study session is starting now!')
   
+@client.command(name='endsession')
+async def end_session(ctx):
+    await ctx.channel.delete()
 
 def parse_study_session_request(*message):
     print(*message)
