@@ -34,16 +34,19 @@ async def schedule_session(ctx, *args):
 @client.command(name='startsession')
 async def start_session(ctx, arg):
     # arg = session id, NOT name
-    channel = await ctx.guild.create_text_channel(f'session-{arg}')
+    # session_users = study_sessions[int(arg)].users
+    overwrites = {
+        ctx.guild.default_role: discord.PermissionOverwrite(read_messages=False),
+        ctx.guild.me: discord.PermissionOverwrite(read_messages=True)
+    }
+
+    channel = await ctx.guild.create_text_channel(f'session-{arg}', overwrites=overwrites)
     user_string = ''
     for user in study_sessions[int(arg)].users:
         user_string += f'<@{user.id}> '
-    await channel.send(user_string + 'your study session is starting now!')
-  
-@client.command(name='endsession')
-async def end_session(ctx):
-    await ctx.channel.delete()
+        await channel.set_permissions(user, read_messages=True, send_messages=True)
 
+    await channel.send(user_string + 'your study session is starting now!')
 
     user_info = {}
     # send initial check in message
@@ -60,6 +63,9 @@ async def end_session(ctx):
     for key, value in user_info.items():
         await channel.send(f'🔊 <@{key}>' + ": " + value[0])
 
+@client.command(name='endsession')
+async def end_session(ctx):
+    await ctx.channel.delete()
    
 def parse_study_session_request(*message):
     print(*message)
