@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from discord.ext import commands
 from StudySession import StudySession
 import datetime
+import asyncio
 
 load_dotenv()
 
@@ -43,12 +44,17 @@ async def start_session(ctx, arg):
     user_info = {}
     # send initial check in message
     for user in study_sessions[int(arg)].users:
-        member = await client.get_user_info('{user.id}')
-        await client.send_message(member, 'What is your goal for today\'s study session?')
-        await client.send_message(member, 'Respond with your goal by sending your goal for today!')
-        msg = await client.wait_for('message')
-        user_info[{user.id}] = {{msg}, {}}
-        print(user_info[{user.id}][0])
+        member = ctx.guild.get_member(user.id)
+        await member.send('What is your goal for today\'s study session?')
+        await member.send(f'Respond with your goal by sending your goal for study session ' + arg + '!')
+        msg = await client.wait_for("message")
+        user_info[user.id] = [msg.content, []]
+        await member.send(f'Thanks! Head back to ' + client.get_channel(channel.id).mention)
+
+    # send user goals
+    await channel.send("Here are everyone's goals for study session " + arg + ":")
+    for key, value in user_info.items():
+        await channel.send(f'🔊 <@{key}>' + ": " + value[0])
 
    
 def parse_study_session_request(*message):
