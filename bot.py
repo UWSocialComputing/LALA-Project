@@ -1,6 +1,6 @@
 # bot.py
 import os
-from discord.ext import commands
+from discord.ext import commands, tasks
 import discord
 from dotenv import load_dotenv
 from discord.ext import commands
@@ -25,13 +25,17 @@ async def on_ready():
     print(f'{client.user} has connected to Discord!')
     print(discord.__version__)
 
-@client.command(name='schedule')
+@client.command(name='schedule',
+                help="Schedule a new study session. EX: /schedule 2022-02-23 5pm 1",
+                brief="Schedules a study session." )
 async def schedule_session(ctx, *args):
     study_session = parse_study_session_request(*args)
     study_sessions.append(study_session)
     await print_study_session_request_response(ctx, study_session)
 
-@client.command(name='startsession')
+@client.command(name='startsession',
+                help="Starts the study session, follow with the session ID given upon scheduling. EX: /startsession 0",
+                brief="Starts a study session." )
 async def start_session(ctx, arg):
     # arg = session id, NOT name
     # session_users = study_sessions[int(arg)].users
@@ -62,6 +66,13 @@ async def start_session(ctx, arg):
     await channel.send("Here are everyone's goals for study session " + arg + ":")
     for key, value in user_info.items():
         await channel.send(f'🔊 <@{key}>' + ": " + value[0])
+
+    send_checkin.start()
+
+#TODO: sends incremental check-in messages every 30 minutes
+@tasks.loop(seconds=30, count=2)
+def send_checkin():
+    print('this is a check-in!')
 
 @client.command(name='endsession')
 async def end_session(ctx):
