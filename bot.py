@@ -7,6 +7,8 @@ from discord.ext import commands
 from StudySession import StudySession
 import datetime
 import asyncio
+import nest_asyncio
+from unsync import unsync
 
 load_dotenv()
 
@@ -37,8 +39,7 @@ async def schedule_session(ctx, *args):
                 help="Starts the study session, follow with the session ID given upon scheduling. EX: /startsession 0",
                 brief="Starts a study session." )
 async def start_session(ctx, arg):
-    # arg = session id, NOT name
-    # session_users = study_sessions[int(arg)].users
+    # arg = session id
     overwrites = {
         ctx.guild.default_role: discord.PermissionOverwrite(read_messages=False),
         ctx.guild.me: discord.PermissionOverwrite(read_messages=True)
@@ -51,6 +52,7 @@ async def start_session(ctx, arg):
         await channel.set_permissions(user, read_messages=True, send_messages=True)
 
     await channel.send(user_string + 'your study session is starting now!')
+    # TODO: begin internal timer that would go off close to the end of the study session
 
     user_info = {}
     # send initial check in message
@@ -58,7 +60,7 @@ async def start_session(ctx, arg):
         member = ctx.guild.get_member(user.id)
 
         def check(msg):
-            return msg.author == user #and msg.channel ==  ctx.channel.type is discord.ChannelType.private
+            return msg.author == user and msg.channel.type is discord.ChannelType.private
 
         await member.send(f'What is your goal for today\'s study session?' + 
         '\nRespond with your goal by sending your goal for study session ' + arg + '!')
@@ -74,7 +76,6 @@ async def start_session(ctx, arg):
 
     send_checkin.start(ctx, arg, user_info)
 
-#TODO: sends incremental check-in messages every 30 minutes
 @tasks.loop(seconds=30, count=2)
 async def send_checkin(ctx, arg, user_info):
     # send checkin message 
@@ -106,18 +107,12 @@ def parse_study_session_request(*message):
     study_session = StudySession(study_date, study_time, duration)
     return study_session
 
-
-# TODO: Method to start the study session
-def start_study_session():
-    return
-
 async def print_study_session_request_response(message, study_session):
     # TODO: Find a way to format the message so it can @channel
     embed=discord.Embed(title=f'{message.author} has requested a study session on {study_session.date} at {study_session.time} for {study_session.duration} hour',
                          description='Please use the emojis to accept or reject this study session!',
                         color=0xFF5733)
     embed.set_footer(text=f'session id: {study_session.id}')
-    
     
     embedded_msg = await message.channel.send(embed=embed)
     await embedded_msg.add_reaction('✅')
@@ -151,5 +146,4 @@ async def on_reaction_add(reaction, user):
                 await reaction.clear()
     
 
-    
 client.run(TOKEN)
