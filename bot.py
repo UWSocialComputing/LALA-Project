@@ -56,8 +56,8 @@ async def start_session(ctx, arg):
     # send initial check in message
     for user in study_sessions[int(arg)].users:
         member = ctx.guild.get_member(user.id)
-        await member.send('What is your goal for today\'s study session?')
-        await member.send(f'Respond with your goal by sending your goal for study session ' + arg + '!')
+        await member.send(f'What is your goal for today\'s study session?' + 
+        '\nRespond with your goal by sending your goal for study session ' + arg + '!')
         msg = await client.wait_for("message")
         user_info[user.id] = [msg.content, []]
         await member.send(f'Thanks! Head back to ' + client.get_channel(channel.id).mention)
@@ -67,12 +67,19 @@ async def start_session(ctx, arg):
     for key, value in user_info.items():
         await channel.send(f'🔊 <@{key}>' + ": " + value[0])
 
-    send_checkin.start()
+    send_checkin.start(ctx, arg, user_info)
 
 #TODO: sends incremental check-in messages every 30 minutes
 @tasks.loop(seconds=30, count=2)
-def send_checkin():
-    print('this is a check-in!')
+async def send_checkin(ctx, arg, user_info):
+    # send checkin message 
+    for user in study_sessions[int(arg)].users:
+        member = ctx.guild.get_member(user.id)
+        await member.send('Respond with your progress toward your goal on a scale from 1-5:')
+        msg = await client.wait_for("message")
+        user_info[user.id][1].append((int(float(msg.content))))
+        await member.send('Take a 5-minute break and then head back to the study channel!')
+#TODO: recommend new study method if rating in under 3
 
 @client.command(name='endsession')
 async def end_session(ctx):
