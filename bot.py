@@ -56,9 +56,14 @@ async def start_session(ctx, arg):
     # send initial check in message
     for user in study_sessions[int(arg)].users:
         member = ctx.guild.get_member(user.id)
+
+        def check(msg):
+            return msg.author == user #and msg.channel ==  ctx.channel.type is discord.ChannelType.private
+
         await member.send(f'What is your goal for today\'s study session?' + 
         '\nRespond with your goal by sending your goal for study session ' + arg + '!')
-        msg = await client.wait_for("message")
+        
+        msg = await client.wait_for("message", check=check)
         user_info[user.id] = [msg.content, []]
         await member.send(f'Thanks! Head back to ' + client.get_channel(channel.id).mention)
 
