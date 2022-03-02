@@ -9,11 +9,13 @@ import datetime
 import asyncio
 import nest_asyncio
 from unsync import unsync
+import random
 
 load_dotenv()
 
-# study_session_users = []
 study_sessions = []
+
+user_info = {}
 
 intents = discord.Intents.default()
 intents.members = True
@@ -29,7 +31,7 @@ async def on_ready():
 
 @client.command(name='schedule',
                 help="Schedule a new study session. EX: /schedule 2022-02-23 5pm 1",
-                brief="Schedules a study session." )
+                brief="Schedules a study session.")
 async def schedule_session(ctx, *args):
     study_session = parse_study_session_request(*args)
     study_sessions.append(study_session)
@@ -37,7 +39,7 @@ async def schedule_session(ctx, *args):
 
 @client.command(name='startsession',
                 help="Starts the study session, follow with the session ID given upon scheduling. EX: /startsession 0",
-                brief="Starts a study session." )
+                brief="Starts a study session.")
 async def start_session(ctx, arg):
     # arg = session id
     overwrites = {
@@ -54,7 +56,7 @@ async def start_session(ctx, arg):
     await channel.send(user_string + 'your study session is starting now!')
     # TODO: begin internal timer that would go off close to the end of the study session
 
-    user_info = {}
+    # user_info = {}
     # send initial check in message
     for user in study_sessions[int(arg)].users:
         member = ctx.guild.get_member(user.id)
@@ -74,21 +76,57 @@ async def start_session(ctx, arg):
     for key, value in user_info.items():
         await channel.send(f'🔊 <@{key}>' + ": " + value[0])
 
-    send_checkin.start(ctx, arg, user_info)
+    send_checkin.start(ctx, arg, user_info, channel)
 
-@tasks.loop(seconds=30, count=2)
-async def send_checkin(ctx, arg, user_info):
+@tasks.loop(seconds=7, count=2)
+async def send_checkin(ctx, arg, user_info, channel):
     # send checkin message 
+    study_tips = ['Try Pomodoro!', 'Try using music this time :)', 'You can do it']
+    low_progress_flag = False
     for user in study_sessions[int(arg)].users:
         member = ctx.guild.get_member(user.id)
         await member.send('Respond with your progress toward your goal on a scale from 1-5:')
         msg = await client.wait_for("message")
-        user_info[user.id][1].append((int(float(msg.content))))
+        progress = (int(float(msg.content)))
+        print(f'user id in checkin : {user.id}')
+        user_info[user.id][1].append(progress)
+        if (progress < 3):
+            low_progress_flag = True
         await member.send('Take a 5-minute break and then head back to the study channel!')
-#TODO: recommend new study method if rating in under 3
 
-@client.command(name='endsession')
+    await asyncio.sleep(5)  # for demo purposes. otherwise would be 5 * 60 seconds
+    if low_progress_flag is True:
+        await channel.send(study_tips[random.randrange(len(study_tips))])
+
+def aggregate_user_trend(ratings):
+    # non-decreasing
+    if all(x<=y for x, y in zip(ratings, ratings[1:])):
+        return 1
+
+    # non-increasing
+    if all(x>=y for x, y in zip(ratings, ratings[1:])):
+        return -1
+
+    # constant ratings
+        return 0
+
+@client.command(name='endsession',
+                help="Ends the study session channel that the command is made in. EX: /endsession",
+                brief="Ends a study session by closing the channel.")
 async def end_session(ctx):
+    for member in ctx.channel.members:
+        print(f'id: {member}, {member.name}, {member.id}')
+        if member.id in user_info.keys():
+            trend = aggregate_user_trend(user_info[member.id][1])
+            trend_description = ''
+            if trend == 1:
+                trend_description = 'more'
+            elif trend == -1:
+                trend_description = 'less'
+            await ctx.channel.send(f'<@{member.id}> has become {trend_description} productive over this session!')
+            if trend <= 0:
+                await ctx.channel.send(f'Cheer {member} on! They weren\'t as productive as they wanted to be today')
+    await asyncio.sleep(15)
     await ctx.channel.delete()
    
 def parse_study_session_request(*message):
