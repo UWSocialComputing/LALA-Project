@@ -14,11 +14,10 @@ We hoped to create a solution that will allow us to remain productive and effici
 
 ## 💻  How to Download
 
-_**To be added**_
+Feel free to locally clone the repo and try it out on your own! We are hoping to figure out how to host our bot over a server to make it more accessible.
 <br><br>
 
 ## 🧑‍💻 How to Use
-<br>
 
 ### ⏰ Scheduling a Study Session
 To schedule a study session, you can send a request in any text channel with the format **/schedule [year-month-date] the time in PT followed by am/pm and the duration [1,2,3 hr]**. <br>
