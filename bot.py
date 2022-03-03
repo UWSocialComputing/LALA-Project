@@ -15,8 +15,18 @@ import time
 load_dotenv()
 
 study_sessions = []
-
 user_info = {}
+study_tips = [
+    '🎧 Try listening to some lofi music to help you focus in this time! Here is a playlist on Spotify: https://open.spotify.com/playlist/37i9dQZF1DX8Uebhn9wzrS?si=PXwNN9oaSea2KxBfAgrR-g',
+    '⏱ For the next 30 minutes try using the time blocking method, here is a guide https://www.betterup.com/blog/time-blocking#:~:text=Time%20blocking%20is%20a%20planning,but%20when%20to%20do%20it', 
+    '📚 Try using the Pomodoro technique for the next 30 minutes try using the Pomodoro technique, here is a guide https://francescocirillo.com/pages/pomodoro-technique',
+    '📑 Make a to-do list for what you want to accomplish in the next 30 minutes and see how much we can get done by the next check-in!',
+    '🖥 Try playing this cafe video to focus in https://www.youtube.com/watch?v=VMAPTo7RVCo',
+    '🧙‍♀️ Try transporting to study in Hogwarts for the next 30 minutes! https://www.youtube.com/watch?v=BQrxsyGTztM',
+    '⛔ Take yourself offline for the next 30 minutes. Turn off your phone and silence incomming notifications',
+    '🤓 Organize a prioritized to-do list based off of due dates to get ahead on your deadlines!',
+    '💻 Try using Notion to organize your thoughts! https://www.notion.so/product'
+    ]
 
 intents = discord.Intents.default()
 intents.members = True
@@ -56,8 +66,8 @@ async def start_session(ctx, arg):
     await channel.send('Your session has ended now! Use /endsession to leave or feel free to stay on and keep working!')
     #await end_session(ctx, channel_name, channel)
 
-
-@tasks.loop(seconds=60, count=1)
+# start session loop
+@tasks.loop(seconds=120, count=1)
 async def startsession(ctx, arg, channel):
     user_string = ''
     for user in study_sessions[int(arg)].users:
@@ -65,9 +75,7 @@ async def startsession(ctx, arg, channel):
         await channel.set_permissions(user, read_messages=True, send_messages=True)
 
     await channel.send(user_string + 'your study session is starting now!')
-    # TODO: begin internal timer that would go off close to the end of the study session
 
-    # user_info = {}
     # send initial check in message
     for user in study_sessions[int(arg)].users:
         member = ctx.guild.get_member(user.id)
@@ -93,10 +101,10 @@ async def startsession(ctx, arg, channel):
     await asyncio.sleep(10)
     send_checkin.start(ctx, arg, user_info, channel)
 
+# send check ins
 @tasks.loop(seconds=10, count=2)
 async def send_checkin(ctx, arg, user_info, channel):
     # send checkin message 
-    study_tips = ['Try Pomodoro!', 'Try using music this time :)', 'You can do it']
     low_progress_flags = {}
     for user in study_sessions[int(arg)].users:
         def check(msg):
@@ -125,10 +133,11 @@ async def send_checkin(ctx, arg, user_info, channel):
 
     await asyncio.sleep(5)  # for demo purposes. otherwise would be 5 * 60 seconds
     for user_id in low_progress_flags:
+        length = len(user_info[user_id][1])
         if low_progress_flags[user_id] == True:
-            await channel.send(f'<@{user_id}> {study_tips[random.randrange(len(study_tips))]}')
+            await channel.send(f'<@{user_id}> rated a {user_info[user_id][1][length - 1]} - {study_tips[random.randrange(len(study_tips))]}')
         else:
-            await channel.send(f'<@{user_id}> Keep up the great work!')
+            await channel.send(f'<@{user_id}> rated a {user_info[user_id][1][length - 1]} - Keep up the great work!')
 
 def aggregate_user_trend(ratings):
     # non-decreasing
@@ -179,7 +188,6 @@ def parse_study_session_request(*message):
     return study_session
 
 async def print_study_session_request_response(message, study_session):
-    # TODO: Find a way to format the message so it can @channel
     embed=discord.Embed(title=f'{message.author} has requested a study session on {study_session.date} at {study_session.time} for {study_session.duration} hour',
                          description='Please use the emojis to accept or reject this study session!',
                         color=0xFF5733)
@@ -202,7 +210,6 @@ async def on_member_join(member):
 
 @client.event
 async def on_reaction_add(reaction, user):
-    #rating_emojis = {'1️⃣': 1, '2️⃣':2, '3️⃣':3,'4️⃣':4, '5️⃣':5}
     msg = reaction.message
     if user == client.user:
         return
