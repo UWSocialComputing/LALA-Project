@@ -10,6 +10,7 @@ import asyncio
 import nest_asyncio
 from unsync import unsync
 import random
+import time
 
 load_dotenv()
 
@@ -29,6 +30,7 @@ async def on_ready():
     print(f'{client.user} has connected to Discord!')
     print(discord.__version__)
 
+# Schedules a study session
 @client.command(name='schedule',
                 help="Schedule a new study session. EX: /schedule 2022-02-23 5pm 1",
                 brief="Schedules a study session.")
@@ -37,6 +39,7 @@ async def schedule_session(ctx, *args):
     study_sessions.append(study_session)
     await print_study_session_request_response(ctx, study_session)
 
+# Starts a study session
 @client.command(name='startsession',
                 help="Starts the study session, follow with the session ID given upon scheduling. EX: /startsession 0",
                 brief="Starts a study session.")
@@ -46,8 +49,16 @@ async def start_session(ctx, arg):
         ctx.guild.default_role: discord.PermissionOverwrite(read_messages=False),
         ctx.guild.me: discord.PermissionOverwrite(read_messages=True)
     }
-
     channel = await ctx.guild.create_text_channel(f'session-{arg}', overwrites=overwrites)
+
+    await startsession.start(ctx, arg, channel)
+    #channel_name = discord.utils.get(ctx.guild.channels, name=f'session-{arg}')
+    await channel.send('Your session has ended now! Use /endsession to leave or feel free to stay on and keep working!')
+    #await end_session(ctx, channel_name, channel)
+
+
+@tasks.loop(seconds=60, count=1)
+async def startsession(ctx, arg, channel):
     user_string = ''
     for user in study_sessions[int(arg)].users:
         user_string += f'<@{user.id}> '
@@ -64,8 +75,10 @@ async def start_session(ctx, arg):
         def check(msg):
             return msg.author == user and msg.channel.type is discord.ChannelType.private
 
-        await member.send(f'What is your goal for today\'s study session?' + 
-        '\nRespond with your goal by sending your goal for study session ' + arg + '!')
+        embed=discord.Embed(title=f'What is your goal for today\'s study session?',
+            description=f'Respond with your goal by sending your goal for study session {arg}!',
+            color=0xFF5733)
+        await member.send(embed=embed)
         
         msg = await client.wait_for("message", check=check)
         user_info[user.id] = [msg.content, []]
@@ -74,29 +87,48 @@ async def start_session(ctx, arg):
     # send user goals
     await channel.send("Here are everyone's goals for study session " + arg + ":")
     for key, value in user_info.items():
-        await channel.send(f'🔊 <@{key}>' + ": " + value[0])
+        await channel.send(f'🔊 <@{key}>: {value[0]}')
 
+    # Wait 10 seconds before sending the first check in
+    await asyncio.sleep(10)
     send_checkin.start(ctx, arg, user_info, channel)
 
-@tasks.loop(seconds=7, count=2)
+@tasks.loop(seconds=10, count=2)
 async def send_checkin(ctx, arg, user_info, channel):
     # send checkin message 
     study_tips = ['Try Pomodoro!', 'Try using music this time :)', 'You can do it']
-    low_progress_flag = False
+    low_progress_flags = {}
     for user in study_sessions[int(arg)].users:
+        def check(msg):
+            return msg.author == user and msg.channel.type is discord.ChannelType.private
+
         member = ctx.guild.get_member(user.id)
-        await member.send('Respond with your progress toward your goal on a scale from 1-5:')
-        msg = await client.wait_for("message")
+        embed=discord.Embed(title=f'Progress check in!',
+            description=f'Respond with your progress toward your goal on a scale from 1-5',
+            color=0xFF5733)
+        embed.set_footer(text=f'ratings')
+        await member.send(embed=embed)
+
+        msg = await client.wait_for("message", check=check)
         progress = (int(float(msg.content)))
+
         print(f'user id in checkin : {user.id}')
+
         user_info[user.id][1].append(progress)
+        
         if (progress < 3):
-            low_progress_flag = True
-        await member.send('Take a 5-minute break and then head back to the study channel!')
+            low_progress_flags[user.id] = True
+        else:
+            low_progress_flags[user.id] = False
+
+        await member.send(f'Take a 5-minute break and then head back to <#{channel.id}>')
 
     await asyncio.sleep(5)  # for demo purposes. otherwise would be 5 * 60 seconds
-    if low_progress_flag is True:
-        await channel.send(study_tips[random.randrange(len(study_tips))])
+    for user_id in low_progress_flags:
+        if low_progress_flags[user_id] == True:
+            await channel.send(f'<@{user_id}> {study_tips[random.randrange(len(study_tips))]}')
+        else:
+            await channel.send(f'<@{user_id}> Keep up the great work!')
 
 def aggregate_user_trend(ratings):
     # non-decreasing
@@ -126,6 +158,7 @@ async def end_session(ctx):
             await ctx.channel.send(f'<@{member.id}> has become {trend_description} productive over this session!')
             if trend <= 0:
                 await ctx.channel.send(f'Cheer {member} on! They weren\'t as productive as they wanted to be today')
+
     await asyncio.sleep(15)
     await ctx.channel.delete()
    
@@ -169,6 +202,7 @@ async def on_member_join(member):
 
 @client.event
 async def on_reaction_add(reaction, user):
+    #rating_emojis = {'1️⃣': 1, '2️⃣':2, '3️⃣':3,'4️⃣':4, '5️⃣':5}
     msg = reaction.message
     if user == client.user:
         return
@@ -182,6 +216,5 @@ async def on_reaction_add(reaction, user):
                 study_sessions[int(session_id)].users.append(user)
             if reaction.emoji not in ['✅','❌']:
                 await reaction.clear()
-    
 
 client.run(TOKEN)
