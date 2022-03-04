@@ -19,7 +19,7 @@ user_info = {}
 study_tips = [
     '🎧 Try listening to some lofi music to help you focus in this time! Here is a playlist on Spotify: https://open.spotify.com/playlist/37i9dQZF1DX8Uebhn9wzrS?si=PXwNN9oaSea2KxBfAgrR-g',
     '⏱ For the next 30 minutes try using the time blocking method, here is a guide https://www.betterup.com/blog/time-blocking#:~:text=Time%20blocking%20is%20a%20planning,but%20when%20to%20do%20it', 
-    '📚 Try using the Pomodoro technique for the next 30 minutes try using the Pomodoro technique, here is a guide https://francescocirillo.com/pages/pomodoro-technique',
+    '📚 Try using the Pomodoro technique for the next 30 minutes, here is a guide https://francescocirillo.com/pages/pomodoro-technique',
     '📑 Make a to-do list for what you want to accomplish in the next 30 minutes and see how much we can get done by the next check-in!',
     '🖥 Try playing this cafe video to focus in https://www.youtube.com/watch?v=VMAPTo7RVCo',
     '🧙‍♀️ Try transporting to study in Hogwarts for the next 30 minutes! https://www.youtube.com/watch?v=BQrxsyGTztM',
